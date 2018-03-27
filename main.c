@@ -13,16 +13,17 @@
 #define TEMP_ADDR 0b10010000
 
 typedef struct {
-    uint32_t curr_power;
-    uint32_t max_power;
-    uint32_t min_power;
-    uint16_t curr_voltage;
-    uint16_t max_voltage;
-    uint16_t min_voltage;
-    uint32_t energy;
+    uint16_t voltageMilliVolts;
+    uint16_t currentMilliAmperes;
+    uint32_t energyMilliJoules;
 } ltc_result_t;
 
+enum {
+    VCC, _5V, _3V3
+};
+
 int8_t temp;
+ltc_result_t ltc_measurements[3];
 
 /*
  * LTC-Werte
@@ -64,31 +65,83 @@ int main() {
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
+    uint16_t tmp;
     while (true) {
-        if(i2c_start(LTC_VCC_ADDR | I2C_WRITE)) {
-            uart_send_char('a');
-        }
-
-        if(i2c_write(0x1E)) {
-            uart_send_char('A');
-        }
-
-        if(i2c_rep_start(LTC_VCC_ADDR + I2C_READ)) {
-            uart_send_char('B');
-        }
-
-        uart_send_char('C');
-        uint16_t voltage = (uint16_t)i2c_readAck() << 4;
-        voltage |= i2c_readNak() >> 4;
-        uart_send_char(voltage/40);
-
+        // VCC
+        i2c_start(LTC_VCC_ADDR | I2C_WRITE);
+        i2c_write(0x1E);
+        i2c_rep_start(LTC_VCC_ADDR | I2C_READ);
+        tmp= (uint16_t)i2c_readAck() << 4;
+        tmp |= i2c_readNak() >> 4;
+        ltc_measurements[VCC].voltageMilliVolts = tmp*25;
         i2c_stop();
 
+        i2c_start(LTC_VCC_ADDR | I2C_WRITE);
+        i2c_write(0x14);
+        i2c_rep_start(LTC_VCC_ADDR | I2C_READ);
+        tmp= (uint16_t)i2c_readAck() << 4;
+        tmp |= i2c_readNak() >> 4;
+        ltc_measurements[VCC].currentMilliAmperes = (uint16_t)(tmp*12.5);
+        i2c_stop();
+
+        i2c_start(LTC_VCC_ADDR | I2C_WRITE);
+        i2c_write(0x3C);
+        i2c_rep_start(LTC_VCC_ADDR | I2C_READ);
+        tmp = (uint32_t)i2c_readAck() << 24;
+        tmp |= (uint32_t)i2c_readAck() << 16;
+        tmp |= (uint32_t)i2c_readAck() << 8;
+        tmp |= (uint32_t)i2c_readNak();
+        ltc_measurements[VCC].energyMilliJoules = (uint16_t)(tmp*335.78);
+        i2c_stop();
+
+        // 5V
+        i2c_start(LTC_5V_ADDR | I2C_WRITE);
+        i2c_write(0x1E);
+        i2c_rep_start(LTC_5V_ADDR | I2C_READ);
+        tmp = (uint16_t)i2c_readAck() << 4;
+        tmp |= i2c_readNak() >> 4;
+        ltc_measurements[_5V].voltageMilliVolts = tmp*25;
+        i2c_stop();
+
+        i2c_start(LTC_5V_ADDR | I2C_WRITE);
+        i2c_write(0x14);
+        i2c_rep_start(LTC_5V_ADDR | I2C_READ);
+        tmp= (uint16_t)i2c_readAck() << 4;
+        tmp |= i2c_readNak() >> 4;
+        ltc_measurements[_5V].currentMilliAmperes = (uint16_t)(tmp*12.5);
+        i2c_stop();
+
+        i2c_start(LTC_5V_ADDR | I2C_WRITE);
+        i2c_write(0x3C);
+        i2c_rep_start(LTC_5V_ADDR | I2C_READ);
+        tmp = (uint32_t)i2c_readAck() << 24;
+        tmp |= (uint32_t)i2c_readAck() << 16;
+        tmp |= (uint32_t)i2c_readAck() << 8;
+        tmp |= (uint32_t)i2c_readNak();
+        ltc_measurements[_5V].energyMilliJoules = (uint16_t)(tmp*335.78);
+        i2c_stop();
+
+        // Temperature
         i2c_start(TEMP_ADDR | I2C_WRITE);
         i2c_write(0x00);
         i2c_rep_start(TEMP_ADDR | I2C_READ);
         temp = i2c_readNak();
         i2c_stop();
+
+        uart_send_char('T');
+        uart_send_char(temp);
+        uart_send_char('V');
+        uart_send_char(ltc_measurements[VCC].voltageMilliVolts / 1000);
+        uart_send_char('A');
+        uart_send_char(ltc_measurements[VCC].currentMilliAmperes);
+        uart_send_char('E');
+        uart_send_char(ltc_measurements[VCC].energyMilliJoules / 1000);
+        uart_send_char('5');
+        uart_send_char(ltc_measurements[_5V].voltageMilliVolts / 1000);
+        uart_send_char('A');
+        uart_send_char(ltc_measurements[_5V].currentMilliAmperes);
+        uart_send_char('E');
+        uart_send_char(ltc_measurements[_5V].energyMilliJoules / 1000);
 
         /*
          * PD6 -> High, PD7 -> Low
