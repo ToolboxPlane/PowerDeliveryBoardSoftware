@@ -21,7 +21,7 @@ SET(CMAKE_CXX_FLAGS ${CXXFLAGS})
 SET(CMAKE_CXX_STANDARD 11)
 SET(CMAKE_C_STANDARD  11)
 
-ADD_EXECUTABLE(${PROJECT_NAME} main.c uart.c uart.h)
+ADD_EXECUTABLE(${PROJECT_NAME} main.c uart.c uart.h i2c/i2cmaster.h i2c/twimaster.c)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "${PROJECT_NAME}.elf")
 

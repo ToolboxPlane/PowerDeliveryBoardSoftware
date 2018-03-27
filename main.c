@@ -5,14 +5,12 @@
 #include <util/twi.h>
 
 #include "uart.h"
+#include "i2c/i2cmaster.h"
 
-
-/*
- * LTC-I²C Adresses
- * V+ 0xDE
- * 5V 0xCE
- * 3V3 0xD2
- */
+#define LTC_VCC_ADDR 0xDE
+#define LTC_5V_ADDR 0xCE
+#define LTC_3V3_ADDR 0xD2
+#define TEMP_ADDR 0b10010000
 
 typedef struct {
     uint32_t curr_power;
@@ -24,7 +22,7 @@ typedef struct {
     uint32_t energy;
 } ltc_result_t;
 
-uint32_t power = 0;
+int8_t temp;
 
 
 // SPI-Serial transfer complete
@@ -33,11 +31,6 @@ ISR(SPI_STC_vect) {
 
     SPDR = 17;
 }
-
-// Twi-Interrupt
-ISR(TWI_vect) {
-}
-
 
 int main() {
     // Disable the interrupts
@@ -49,9 +42,10 @@ int main() {
     DDRD = 0b11000010;
 
     // Setup I²C (SCL-Frequency 100kHz)
-    TWBR = 23; // Twi-Bit-Rate-Register
+    /*TWBR = 23; // Twi-Bit-Rate-Register
     TWSR = 0b01; // Prescaler to 4, Clear all status flags
-    TWCR = (1 << TWEA) | (1 << TWEN) | (1 << TWIE); // Enable Ack | Twi Enable | Twi Interrupt Enable
+    TWCR = (1 << TWEA) | (1 << TWEN) | (1 << TWIE); // Enable Ack | Twi Enable | Twi Interrupt Enable*/
+    i2c_init();
 
     // Setup SPI-Slave
     SPCR = (1 << SPIE) | (1 << SPE); // Interrupt enabled, Spi enabled, Slave-Mode
@@ -59,62 +53,50 @@ int main() {
     // Setup UART
     uart_init(9600);
 
+
+    // Setup the Ltc 2946
+    i2c_start(LTC_VCC_ADDR | I2C_WRITE);
+    i2c_write(0x00);
+    i2c_write(0b00011111);
+    i2c_stop();
+
     // Enable the interrupts
     sei();
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
     while (true) {
-        TWCR = (1<<TWINT) | (1<<TWSTA)|(1<<TWEN); // Send start condition
-        while (!(TWCR & (1<<TWINT)));
-        if ((TWSR & 0xF8) != TW_START) {
-            uart_send_char('E');
+        /*i2c_start(0xDE | I2C_WRITE);
+        i2c_write(0x00);
+        i2c_write(0b00010111);
+        i2c_stop();
+
+        _delay_ms(100);
+
+        if(i2c_start(0xDE | I2C_WRITE)) {
+            uart_send_char('a');
         }
 
-        TWDR = 0xDE; // V+
-        TWCR = (1<<TWINT) | (1<<TWEN);
-        while (!(TWCR & (1<<TWINT)));
-        if ((TWSR & 0xF8) != TW_MT_SLA_ACK) {
-            uart_send_char('D');
+        if(i2c_write(0x00)) {
+            uart_send_char('A');
         }
 
-        TWDR = 0x05; // Power
-        TWCR = (1<<TWINT) | (1<<TWEN);
-        while (!(TWCR & (1<<TWINT)));
-        if ((TWSR & 0xF8) != TW_MT_DATA_ACK) {
-            uart_send_char('F');
+        if(i2c_rep_start(0xDE + I2C_READ)) {
+            uart_send_char('B');
         }
 
-        TWCR = (1<<TWINT)|
-               (1<<TWEN)|(1<<TWSTO);
+        uart_send_char('C');
+        uart_send_char(i2c_readAck());
+        uart_send_char(i2c_readNak());
 
+        i2c_stop();*/
 
-        TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
-        while (!(TWCR & (1<<TWINT)));
-        if ((TWSR & 0xF8) != TW_START) {
-            uart_send_char('K');
-        }
+        i2c_start(TEMP_ADDR | I2C_WRITE);
+        i2c_write(0x00);
+        i2c_rep_start(TEMP_ADDR | I2C_READ);
+        temp = i2c_readNak();
+        i2c_stop();
 
-        TWDR = 0xDE | 0b1;
-        TWCR = (1<<TWINT) | (1<<TWEN);
-        while (!(TWCR & (1<<TWINT)));
-        if ((TWSR & 0xF8) != TW_MT_SLA_ACK) {
-            uart_send_char('J');
-        }
-
-        power = (uint32_t)TWDR << 16;
-        while (!(TWCR & (1<<TWINT)));
-
-        power |= (uint32_t)TWDR << 8;
-        while (!(TWCR & (1<<TWINT)));
-
-        power |= (uint32_t)TWDR;
-        while (!(TWCR & (1<<TWINT)));
-
-        TWCR = (1<<TWINT)|
-               (1<<TWEN)|(1<<TWSTO);
-
-        uart_send_char(power);
         /*
          * PD6 -> High, PD7 -> Low
          */
