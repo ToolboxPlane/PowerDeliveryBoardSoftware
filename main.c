@@ -1,11 +1,11 @@
 #include <stdbool.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
-#include <avr/delay.h>
-#include <util/twi.h>
 
 #include "uart.h"
 #include "i2c/i2cmaster.h"
+
+#define _DEBUG
 
 #define LTC_VCC_ADDR 0xDE
 #define LTC_5V_ADDR 0xCE
@@ -34,6 +34,45 @@ ltc_result_t ltc_measurements[3];
  * 335.78mJ/LSB
  */
 
+void getLtcMeasurements(uint8_t deviceAddr, ltc_result_t *result) {
+    uint32_t tmp;
+
+    i2c_start(deviceAddr | I2C_WRITE);
+    i2c_write(0x1E);
+    i2c_rep_start(deviceAddr | I2C_READ);
+    tmp= (uint16_t)i2c_readAck() << 4;
+    tmp |= i2c_readNak() >> 4;
+    result->voltageMilliVolts = tmp*25;
+    i2c_stop();
+
+    i2c_start(deviceAddr | I2C_WRITE);
+    i2c_write(0x14);
+    i2c_rep_start(deviceAddr | I2C_READ);
+    tmp= (uint16_t)i2c_readAck() << 4;
+    tmp |= i2c_readNak() >> 4;
+    result->currentMilliAmperes = (uint16_t)(tmp*12.5);
+    i2c_stop();
+
+    i2c_start(deviceAddr | I2C_WRITE);
+    i2c_write(0x3C);
+    i2c_rep_start(deviceAddr | I2C_READ);
+    tmp = (uint32_t)i2c_readAck() << 24;
+    tmp |= (uint32_t)i2c_readAck() << 16;
+    tmp |= (uint32_t)i2c_readAck() << 8;
+    tmp |= (uint32_t)i2c_readNak();
+    result->energyMilliJoules = (uint16_t)(tmp*335.78);
+    i2c_stop();
+}
+
+void setReset(bool reset) {
+    if(reset) {
+        PORTD |= (1 << 6); // Reset -> Low
+        PORTD &= ~(1 << 7);
+    } else {
+        PORTD &= ~(1 << 6); // Reset -> High
+        PORTD |= (1 << 7);
+    }
+}
 
 // SPI-Serial transfer complete
 ISR(SPI_STC_vect) {
@@ -65,61 +104,12 @@ int main() {
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
-    uint16_t tmp;
     while (true) {
         // VCC
-        i2c_start(LTC_VCC_ADDR | I2C_WRITE);
-        i2c_write(0x1E);
-        i2c_rep_start(LTC_VCC_ADDR | I2C_READ);
-        tmp= (uint16_t)i2c_readAck() << 4;
-        tmp |= i2c_readNak() >> 4;
-        ltc_measurements[VCC].voltageMilliVolts = tmp*25;
-        i2c_stop();
-
-        i2c_start(LTC_VCC_ADDR | I2C_WRITE);
-        i2c_write(0x14);
-        i2c_rep_start(LTC_VCC_ADDR | I2C_READ);
-        tmp= (uint16_t)i2c_readAck() << 4;
-        tmp |= i2c_readNak() >> 4;
-        ltc_measurements[VCC].currentMilliAmperes = (uint16_t)(tmp*12.5);
-        i2c_stop();
-
-        i2c_start(LTC_VCC_ADDR | I2C_WRITE);
-        i2c_write(0x3C);
-        i2c_rep_start(LTC_VCC_ADDR | I2C_READ);
-        tmp = (uint32_t)i2c_readAck() << 24;
-        tmp |= (uint32_t)i2c_readAck() << 16;
-        tmp |= (uint32_t)i2c_readAck() << 8;
-        tmp |= (uint32_t)i2c_readNak();
-        ltc_measurements[VCC].energyMilliJoules = (uint16_t)(tmp*335.78);
-        i2c_stop();
+        getLtcMeasurements(LTC_VCC_ADDR, &ltc_measurements[VCC]);
 
         // 5V
-        i2c_start(LTC_5V_ADDR | I2C_WRITE);
-        i2c_write(0x1E);
-        i2c_rep_start(LTC_5V_ADDR | I2C_READ);
-        tmp = (uint16_t)i2c_readAck() << 4;
-        tmp |= i2c_readNak() >> 4;
-        ltc_measurements[_5V].voltageMilliVolts = tmp*25;
-        i2c_stop();
-
-        i2c_start(LTC_5V_ADDR | I2C_WRITE);
-        i2c_write(0x14);
-        i2c_rep_start(LTC_5V_ADDR | I2C_READ);
-        tmp= (uint16_t)i2c_readAck() << 4;
-        tmp |= i2c_readNak() >> 4;
-        ltc_measurements[_5V].currentMilliAmperes = (uint16_t)(tmp*12.5);
-        i2c_stop();
-
-        i2c_start(LTC_5V_ADDR | I2C_WRITE);
-        i2c_write(0x3C);
-        i2c_rep_start(LTC_5V_ADDR | I2C_READ);
-        tmp = (uint32_t)i2c_readAck() << 24;
-        tmp |= (uint32_t)i2c_readAck() << 16;
-        tmp |= (uint32_t)i2c_readAck() << 8;
-        tmp |= (uint32_t)i2c_readNak();
-        ltc_measurements[_5V].energyMilliJoules = (uint16_t)(tmp*335.78);
-        i2c_stop();
+        getLtcMeasurements(LTC_5V_ADDR, &ltc_measurements[_5V]);
 
         // Temperature
         i2c_start(TEMP_ADDR | I2C_WRITE);
@@ -128,6 +118,7 @@ int main() {
         temp = i2c_readNak();
         i2c_stop();
 
+#ifdef _DEBUG
         uart_send_char('T');
         uart_send_char(temp);
         uart_send_char('V');
@@ -142,25 +133,7 @@ int main() {
         uart_send_char(ltc_measurements[_5V].currentMilliAmperes);
         uart_send_char('E');
         uart_send_char(ltc_measurements[_5V].energyMilliJoules / 1000);
-
-        /*
-         * PD6 -> High, PD7 -> Low
-         */
-       /* PORTD |= (1 << 6);
-        PORTD &= ~(1 << 7);
-        _delay_ms(1000);
-
-        PORTD |= (1 << 6);
-        PORTD |= (1 << 7);
-        _delay_ms(333);
-
-        PORTD &= ~(1 << 6);
-        PORTD &= ~(1 << 7);
-        _delay_ms(333);
-
-        PORTD &= ~(1 << 6);
-        PORTD |= (1 << 7);
-        _delay_ms(333);*/
+#endif
     }
 #pragma clang diagnostic pop
 }
