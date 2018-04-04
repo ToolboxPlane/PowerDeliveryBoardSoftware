@@ -41,11 +41,14 @@ int main() {
     DDRC = 0b00000000;
     DDRD = 0b11000010;
 
+    PORTC = 0b111; // Pull up for the LTC2946-Alert
+
     // Setup I²C (SCL-Frequency 100kHz)
     i2c_init();
 
     // Setup SPI-Slave
     SPCR = (1 << SPIE) | (1 << SPE); // Interrupt enabled, Spi enabled, Slave-Mode
+    SPDR = 21;
 
     // Setup UART
 #ifdef _DEBUG
@@ -53,9 +56,9 @@ int main() {
 #endif
 
     // Set the Alarms
-    ltc2946_setup(LTC_VCC_ADDR, 0, 0xFFFF, 14000, 20000, 0, 1000);
-    ltc2946_setup(LTC_5V_ADDR, 0, 0xFFFF, 4500, 5500, 0, 500);
-    at30ts74_setup(TEMP_ADDR, -128, 80);
+    ltc2946_setup(LTC_VCC_ADDR, 0, 0xFFFFFFFF, 14000, 20000, 0, 1000);
+    ltc2946_setup(LTC_5V_ADDR, 0, 0xFFFFFFFF, 4500, 5500, 0, 500);
+    at30ts74_setup(TEMP_ADDR, -128, 25);
 
     // Enable the interrupts
     sei();
@@ -95,6 +98,10 @@ int main() {
 
         uart_send_buf(F(" | VCC Alert: "));
         uart_send_char(ALERT_VCC + '0');
+
+        utoa(ltc2946_status(LTC_VCC_ADDR), buf, 2);
+        uart_send_buf(F(" | VCC Status: "));
+        uart_send_0(buf);
 
         uart_send_buf(F(" | 5V [mV]: "));
         utoa(ltc_measurements[_5V].voltageMilliVolts, buf, 10);

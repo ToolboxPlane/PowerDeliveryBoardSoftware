@@ -48,7 +48,7 @@ void ltc2946_setup(uint8_t deviceAddr, uint32_t minPower, uint32_t maxPower, uin
     i2c_start(deviceAddr | I2C_WRITE);
     i2c_write(0x01); // CTRLB
     i2c_write(0b10100000); // Alert clear on read, fault clear on read
-    i2c_write(0b00000100); // Enable all alerts @TODO really enable all
+    i2c_write(0b11111111); // Enable all alerts
     i2c_stop();
 }
 
@@ -80,5 +80,32 @@ void ltc2946_read(uint8_t deviceAddr, ltc_result_t *result) {
     tmp |= (uint32_t)i2c_readNak();
     result->energyMilliJoules = (uint16_t)(tmp*335.78);
     i2c_stop();
+}
+
+uint8_t ltc2946_status(uint8_t deviceAddr) {
+    i2c_start(deviceAddr | I2C_WRITE);
+    i2c_write(0x03); // STATUS1
+    i2c_start(deviceAddr | I2C_READ);
+    uint8_t tmp = i2c_readNak();
+    i2c_stop();
+    return tmp;
+}
+
+uint8_t ltc2946_fault(uint8_t deviceAddr) {
+    i2c_start(deviceAddr | I2C_WRITE);
+    i2c_write(0x04); // FAULT1
+    i2c_start(deviceAddr | I2C_READ);
+    uint8_t tmp = i2c_readNak();
+    i2c_stop();
+    return tmp;
+}
+
+uint8_t ltc2946_status2(uint8_t deviceAddr) {
+    i2c_start(deviceAddr | I2C_WRITE);
+    i2c_write(0x40); // STATUS2
+    i2c_start(deviceAddr | I2C_READ);
+    uint8_t tmp = i2c_readNak();
+    i2c_stop();
+    return tmp;
 }
 
