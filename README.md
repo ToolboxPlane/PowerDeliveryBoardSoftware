@@ -25,4 +25,4 @@ Possible command are:
 | 0 | Status |
 | 1 | Voltage VCC in mV / 128 |
 | 2 | Current VCC in mA / 256 |
-| 2 | Current 5V in mA / 32 |
+| 3 | Current 5V in mA / 32 |
