@@ -9,7 +9,7 @@
 #include "io.h"
 #include "at30ts74.h"
 
-#define _DEBUG
+//#define _DEBUG
 
 #define LTC_VCC_ADDR 0xDE
 #define LTC_5V_ADDR 0xCE
@@ -27,9 +27,24 @@ ltc_result_t ltc_measurements[3];
 
 // SPI-Serial transfer complete
 ISR(SPI_STC_vect) {
-    uint8_t data = SPDR;
+    uint8_t cmd = SPDR;
 
-    SPDR = 17;
+    switch (cmd) {
+        case 0: // Status
+            SPDR = (uint8_t) ((ALERT_5V << 2) | (ALERT_VCC << 1) | (ALERT_TEMP << 0));
+            break;
+        case 1: // Voltage VCC
+            SPDR = (uint8_t)(ltc_measurements[VCC].voltageMilliVolts / 128);
+            break;
+        case 2: // Current VCC
+            SPDR = (uint8_t)(ltc_measurements[VCC].currentMilliAmperes / 256);
+            break;
+        case 3: // Current 5V
+            SPDR = (uint8_t)(ltc_measurements[_5V].currentMilliAmperes / 32);
+            break;
+        default:
+            SPDR = 255;
+    }
 }
 
 int main() {
@@ -48,7 +63,7 @@ int main() {
 
     // Setup SPI-Slave
     SPCR = (1 << SPIE) | (1 << SPE); // Interrupt enabled, Spi enabled, Slave-Mode
-    SPDR = 21;
+    SPDR = 0;
 
     // Setup UART
 #ifdef _DEBUG
