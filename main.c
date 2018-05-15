@@ -39,8 +39,14 @@ ISR(SPI_STC_vect) {
         case 2: // Current VCC
             SPDR = (uint8_t)(ltc_measurements[VCC].currentMilliAmperes / 256);
             break;
-        case 3: // Current 5V
-            SPDR = (uint8_t)(ltc_measurements[_5V].currentMilliAmperes / 32);
+        case 3: // Voltage 5V
+            SPDR = (uint8_t)(ltc_measurements[_5V].voltageMilliVolts / 32);
+            break;
+        case 4: // Current 5V
+            SPDR = (uint8_t)(ltc_measurements[_5V].currentMilliAmperes / 64);
+            break;
+        case 5: // Temperature
+            SPDR = (uint8_t)temp;
             break;
         default:
             SPDR = 255;

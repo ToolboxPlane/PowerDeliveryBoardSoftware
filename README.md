@@ -25,4 +25,6 @@ Possible command are:
 | 0 | Status |
 | 1 | Voltage VCC in mV / 128 |
 | 2 | Current VCC in mA / 256 |
-| 3 | Current 5V in mA / 32 |
+| 3 | Voltage 5V in mV / 32 |
+| 4 | Current 5V in mA / 64 |
+| 5 | Temperature in °C |
