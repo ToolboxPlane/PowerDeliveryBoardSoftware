@@ -47,4 +47,3 @@ The package is a 8 bit, 8 Channel Package with the following data:
 | 2 | Current VCC in mA / 256 |
 | 3 | Voltage 5V in mV / 32 |
 | 4 | Current 5V in mA / 64 |
-| 5 | 0 |

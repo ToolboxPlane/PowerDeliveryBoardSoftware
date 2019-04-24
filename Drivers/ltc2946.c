@@ -12,9 +12,9 @@ static void callback(bool success) {
     _finished = true;
 }
 
-void ltc2946_setup(uint8_t deviceAddr, uint32_t minPower, uint32_t maxPower, uint16_t minVoltage, uint16_t maxVoltage,
-                   uint16_t minCurrent,
-                   uint16_t maxCurrent) {
+void ltc2946_init(uint8_t deviceAddr, uint32_t minPower, uint32_t maxPower, uint16_t minVoltage, uint16_t maxVoltage,
+                  uint16_t minCurrent,
+                  uint16_t maxCurrent) {
     // Values from real units to Val/LSB
     minVoltage /= 25;
     maxVoltage /= 25;

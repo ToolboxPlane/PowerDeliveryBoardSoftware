@@ -23,10 +23,10 @@ typedef struct {
     uint32_t energyMilliJoules;
 } ltc_result_t;
 
-void ltc2946_setup(uint8_t deviceAddr,
-                    uint32_t minPower, uint32_t maxPower,
-                    uint16_t minVoltage, uint16_t maxVoltage,
-                    uint16_t minCurrent, uint16_t maxCurrent);
+void ltc2946_init(uint8_t deviceAddr,
+                  uint32_t minPower, uint32_t maxPower,
+                  uint16_t minVoltage, uint16_t maxVoltage,
+                  uint16_t minCurrent, uint16_t maxCurrent);
 
 void ltc2946_read(uint8_t deviceAddr, ltc_result_t *result);
 uint8_t ltc2946_status(uint8_t deviceAddr);
