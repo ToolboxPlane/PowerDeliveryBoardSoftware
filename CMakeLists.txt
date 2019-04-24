@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.9)
-project(FlightController)
+project(PowerDeliveryBoardSoftware)
 
 set(AVRSTRIP avr-strip)
 set(OBJCOPY avr-objcopy)
@@ -26,4 +26,4 @@ set(SOURCES main.c ${SOURCES_HAL} ${SOURCES_DRIVER})
 add_executable(${PROJECT_NAME} ${SOURCES})
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "${PROJECT_NAME}.elf")
 add_custom_target(strip ALL ${AVRSTRIP} "${PROJECT_NAME}.elf" DEPENDS ${PROJECT_NAME})
-add_custom_target(${PROJECT_NAME}.hex   ALL ${OBJCOPY} -R .eeprom -O ihex "${PROJECT_NAME}.elf" "${PROJECT_NAME}.hex" DEPENDS strip
+add_custom_target(${PROJECT_NAME}.hex   ALL ${OBJCOPY} -R .eeprom -O ihex "${PROJECT_NAME}.elf" "${PROJECT_NAME}.hex" DEPENDS strip)
