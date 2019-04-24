@@ -4,108 +4,97 @@
 
 #include "ltc2946.h"
 
+static bool _finished = false;
+static bool _success = false;
+
+static void callback(bool success) {
+    _success = success;
+    _finished = true;
+}
+
 void ltc2946_setup(uint8_t deviceAddr, uint32_t minPower, uint32_t maxPower, uint16_t minVoltage, uint16_t maxVoltage,
                    uint16_t minCurrent,
                    uint16_t maxCurrent) {
     // Values from real units to Val/LSB
-    minVoltage /=  25;
+    minVoltage /= 25;
     maxVoltage /= 25;
     minCurrent /= 12;
     maxCurrent /= 12;
     minPower /= 312;
     maxPower /= 312;
 
-    i2c_start(deviceAddr | I2C_WRITE);
-    i2c_write(0x0E); // MaxPower
-    i2c_write((unsigned char)(maxPower >> 16));
-    i2c_write((unsigned char)(maxPower >> 8));
-    i2c_write((unsigned char)(maxPower));
+    uint8_t maxMinPowerBuf[] = {0x0E, maxPower >> 16, maxPower >> 8, maxPower,
+                                minPower >> 16, minPower >> 8, minPower};
+    uint8_t maxMinVoltageBuf[] = {0x24, maxVoltage >> 4, maxVoltage << 4,
+                                  minVoltage >> 4, minVoltage << 4};
+    uint8_t maxMinCurrBuf[] = {0x1A, maxCurrent >> 4, maxCurrent << 4,
+                               minCurrent >> 4, minCurrent << 4};
 
-    i2c_write((unsigned char) (minPower >> 16));
-    i2c_write((unsigned char) (minPower >> 8));
-    i2c_write((unsigned char) minPower);
-    i2c_stop();
+    i2c_init(I2C_CLOCK_100K);
+    _finished = false;
+    i2c_send_receive(deviceAddr, maxMinPowerBuf, sizeof(maxMinPowerBuf), 0, 0, &callback);
+    while (!_finished);
+    _finished = false;
+    i2c_send_receive(deviceAddr, maxMinVoltageBuf, sizeof(maxMinVoltageBuf), 0, 0, &callback);
+    while (!_finished);
+    _finished = false;
+    i2c_send_receive(deviceAddr, maxMinCurrBuf, sizeof(maxMinCurrBuf), 0, 0, &callback);
+    while (!_finished);
 
-    i2c_start(deviceAddr | I2C_WRITE);
-    i2c_write(0x24); // Max Voltage
-    i2c_write((unsigned char) (maxVoltage >> 4));
-    i2c_write((unsigned char) (maxVoltage << 4));
-
-    i2c_write((unsigned char) (minVoltage >> 4));
-    i2c_write((unsigned char) (minVoltage << 4));
-    i2c_stop();
-
-    i2c_start(deviceAddr | I2C_WRITE);
-    i2c_write(0x1A); // Max Current
-    i2c_write((unsigned char) (maxCurrent >> 4));
-    i2c_write((unsigned char) (maxCurrent << 4));
-
-    i2c_write((unsigned char) (minCurrent >> 4));
-    i2c_write((unsigned char) (minCurrent << 4));
-    i2c_stop();
-
-
-    i2c_start(deviceAddr | I2C_WRITE);
-    i2c_write(0x01); // CTRLB
-    i2c_write(0b10100000); // Alert clear on read, fault clear on read
-    i2c_write(0b11111111); // Enable all alerts
-    i2c_stop();
+    // Register CTRL-B:
+    // Alert clear on read, fault clear on read.
+    // Enable all alerts
+    uint8_t ctrlbBuf[] = {0x01, 0b10100000, 0b11111111};
+    _finished = false;
+    i2c_send_receive(deviceAddr, ctrlbBuf, sizeof(ctrlbBuf), 0, 0, &callback);
+    while (!_finished);
 }
 
 void ltc2946_read(uint8_t deviceAddr, ltc_result_t *result) {
-    uint32_t tmp;
+    uint8_t voltageWriteBuf = 0x1E;
+    uint8_t voltageReadBuf[2];
+    _finished = false;
+    i2c_send_receive(deviceAddr, &voltageWriteBuf, 1, voltageReadBuf, sizeof(voltageReadBuf), &callback);
+    while (!_finished);
+    result->voltageMilliVolts = (voltageReadBuf[0] << 4 | voltageReadBuf[1] >> 4) * 25;
 
-    i2c_start(deviceAddr | I2C_WRITE);
-    i2c_write(0x1E);
-    i2c_rep_start(deviceAddr | I2C_READ);
-    tmp= (uint16_t)i2c_readAck() << 4;
-    tmp |= i2c_readNak() >> 4;
-    result->voltageMilliVolts = tmp*25;
-    i2c_stop();
+    uint8_t currWriteBuf = 0x14;
+    uint8_t currReadBuf[2];
+    _finished = false;
+    i2c_send_receive(deviceAddr, &currWriteBuf, 1, currReadBuf, sizeof(currReadBuf), &callback);
+    while (!_finished);
+    result->currentMilliAmperes = (currReadBuf[0] << 4 | currReadBuf[1] >> 4) * 12.5;
 
-    i2c_start(deviceAddr | I2C_WRITE);
-    i2c_write(0x14);
-    i2c_rep_start(deviceAddr | I2C_READ);
-    tmp= (uint16_t)i2c_readAck() << 4;
-    tmp |= i2c_readNak() >> 4;
-    result->currentMilliAmperes = (uint16_t)(tmp*12.5);
-    i2c_stop();
-
-    i2c_start(deviceAddr | I2C_WRITE);
-    i2c_write(0x3C);
-    i2c_rep_start(deviceAddr | I2C_READ);
-    tmp = (uint32_t)i2c_readAck() << 24;
-    tmp |= (uint32_t)i2c_readAck() << 16;
-    tmp |= (uint32_t)i2c_readAck() << 8;
-    tmp |= (uint32_t)i2c_readNak();
-    result->energyMilliJoules = (uint16_t)(tmp*335.78);
-    i2c_stop();
+    uint8_t energyWriteBuf = 0x3E;
+    uint8_t energyReadBuf[4];
+    _finished = false;
+    i2c_send_receive(deviceAddr, &energyWriteBuf, 1, energyReadBuf, sizeof(energyReadBuf), &callback);
+    while (!_finished);
+    result->energyMilliJoules = (energyReadBuf[0] << 24 | energyReadBuf[1] << 16 |
+                                    energyReadBuf[2] << 8 | energyReadBuf[3]) * 335.78;
 }
 
 uint8_t ltc2946_status(uint8_t deviceAddr) {
-    i2c_start(deviceAddr | I2C_WRITE);
-    i2c_write(0x03); // STATUS1
-    i2c_start(deviceAddr | I2C_READ);
-    uint8_t tmp = i2c_readNak();
-    i2c_stop();
+    uint8_t tmp = 0x03;
+    _finished = false;
+    i2c_send_receive(deviceAddr, &tmp, 1, &tmp, 1, &callback);
+    while (!_finished);
     return tmp;
 }
 
 uint8_t ltc2946_fault(uint8_t deviceAddr) {
-    i2c_start(deviceAddr | I2C_WRITE);
-    i2c_write(0x04); // FAULT1
-    i2c_start(deviceAddr | I2C_READ);
-    uint8_t tmp = i2c_readNak();
-    i2c_stop();
+    uint8_t tmp = 0x04;
+    _finished = false;
+    i2c_send_receive(deviceAddr, &tmp, 1, &tmp, 1, &callback);
+    while (!_finished);
     return tmp;
 }
 
 uint8_t ltc2946_status2(uint8_t deviceAddr) {
-    i2c_start(deviceAddr | I2C_WRITE);
-    i2c_write(0x40); // STATUS2
-    i2c_start(deviceAddr | I2C_READ);
-    uint8_t tmp = i2c_readNak();
-    i2c_stop();
+    uint8_t tmp = 0x40;
+    _finished = false;
+    i2c_send_receive(deviceAddr, &tmp, 1, &tmp, 1, &callback);
+    while (!_finished);
     return tmp;
 }
 
