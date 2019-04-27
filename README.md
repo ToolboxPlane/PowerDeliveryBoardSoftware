@@ -37,6 +37,22 @@ JTAG and OCD. The brownout detection level is set to 1.8V.
 avrdude -p m2560 -B 10 -c avrisp2 -U lfuse:w:0xef:m -U hfuse:w:0xc1:m -U efuse:w:0xfe:m
 ```
 
+## LEDs
+Under normal use all leds should be either on or blinking. By inverting most states one can be sure that all leds are working.
+
+If only a single led is off for a longer time, there is a some kind of problem.
+
+| LED-Number | Meaning |
+| --- | --- |
+| 0 | Alive (blinks regularly) |
+| 1 | Not Watchdog |
+| 2 | Not Brownout |
+| 3 | I²C for VCC OK|
+| 4 | I²C for 5V OK |
+| 5 | VCC (Voltage and Current) OK |
+| 6 | 5V (Voltage and Current) OK |
+| 7 | Unused |
+
 ## Package format (Transmitter ID 74)
 The package is a 8 bit, 8 Channel Package with the following data:
 

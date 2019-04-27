@@ -21,7 +21,7 @@ set(CMAKE_C_STANDARD 11)
 
 set(SOURCES_HAL HAL/uart.c HAL/timer8bit.c HAL/i2c.c)
 set(SOURCES_DRIVER Drivers/rc_lib/rc_lib.c Drivers/ltc2946.c)
-set(SOURCES main.c ${SOURCES_HAL} ${SOURCES_DRIVER} Util/communication.c)
+set(SOURCES main.c ${SOURCES_HAL} ${SOURCES_DRIVER} Util/communication.c Util/output.c)
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "${PROJECT_NAME}.elf")
