@@ -17,7 +17,7 @@ void communication_init(void) {
 
 void communication_send_data(uint8_t status, const ltc_result_t *meas_vcc, const ltc_result_t *meas_5v) {
     rc_lib_package_t pkg;
-    pkg.resolution = 8;
+    pkg.resolution = 256;
     pkg.channel_count = 8;
     pkg.mesh = false;
 

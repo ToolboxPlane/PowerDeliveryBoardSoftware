@@ -18,7 +18,7 @@ So if you find a better solution for doing this (no i won't use Makefiles or Baz
 This assumes that an AVRISP mk2 is used, if you use a different programmer
 change the ```-c``` flag.
 ```bash
-avrdude -p m2560 -B 10 -c avrisp2 -U flash:w:FlightController.hex:i
+avrdude -p m2560 -B 10 -c avrisp2 -U flash:w:PowerDeliveryBoardSoftware.hex:i
 ```
 
 ### Fuses

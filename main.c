@@ -5,32 +5,25 @@
 #include "Util/communication.h"
 #include "Util/output.h"
 
-#define LTC_VCC_ADDR 0xDE
-#define LTC_5V_ADDR 0xCE
+#define LTC_VCC_ADDR 0x6F
+#define LTC_5V_ADDR 0x67
 
 int main() {
     // Disable the interrupts
     cli();
     output_init();
     output_led(0, on);
-    if (!(MCUSR & 0b01000)) { // Watchdog
-        output_led(1, on);
-    } else {
-        output_led(1, off);
-    }
-    if (!(MCUSR & 0b00100)) { // Brownout
-        output_led(2, on);
-    } else {
-        output_led(2, off);
-    }
-
-
-    ltc2946_init(LTC_VCC_ADDR,  0, 0xFFFFFFFF, 14000, 20000, 0, 1000);
-    ltc2946_init(LTC_5V_ADDR,  0, 0xFFFFFFFF, 4500, 5500, 0, 500);
+    output_led(7, on);
+    output_led(1, MCUSR & (1 << WDRF) ? off : on); // Watchdog
+    output_led(2, MCUSR & (1 << BORF) ? off : on); // Brownout
+    MCUSR = 0;
     communication_init();
     // Enable the interrupts
     sei();
-    wdt_enable(WDTO_120MS);
+
+    wdt_enable(WDTO_1S);
+    ltc2946_init(LTC_VCC_ADDR,  0, 0xFFFFFFFF, 14000, 20000, 0, 1000);
+    ltc2946_init(LTC_5V_ADDR,  0, 0xFFFFFFFF, 4500, 5500, 0, 500);
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-noreturn"

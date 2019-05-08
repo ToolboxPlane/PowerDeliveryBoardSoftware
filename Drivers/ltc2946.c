@@ -4,8 +4,8 @@
 
 #include "ltc2946.h"
 
-static bool _finished = false;
-static bool _success = false;
+static volatile bool _finished = false;
+static volatile bool _success = false;
 
 static void callback(bool success) {
     _success = success;
@@ -72,7 +72,7 @@ bool ltc2946_read(uint8_t deviceAddr, ltc_result_t *result) {
     if (!_success) {
         return false;
     }
-    result->voltageMilliVolts = (voltageReadBuf[0] << 4 | voltageReadBuf[1] >> 4) * 25;
+    result->voltageMilliVolts = ((uint16_t)voltageReadBuf[0] << 4 | voltageReadBuf[1] >> 4) * 25;
 
     uint8_t currWriteBuf = 0x14;
     uint8_t currReadBuf[2];
@@ -82,7 +82,7 @@ bool ltc2946_read(uint8_t deviceAddr, ltc_result_t *result) {
     if (!_success) {
         return false;
     }
-    result->currentMilliAmperes = (currReadBuf[0] << 4 | currReadBuf[1] >> 4) * 12.5;
+    result->currentMilliAmperes = ((uint16_t)currReadBuf[0] << 4 | currReadBuf[1] >> 4) * 12.5;
 
     uint8_t energyWriteBuf = 0x3E;
     uint8_t energyReadBuf[4];
@@ -92,8 +92,8 @@ bool ltc2946_read(uint8_t deviceAddr, ltc_result_t *result) {
     if (!_success) {
         return false;
     }
-    result->energyMilliJoules = (energyReadBuf[0] << 24 | energyReadBuf[1] << 16 |
-                                    energyReadBuf[2] << 8 | energyReadBuf[3]) * 335.78;
+    result->energyMilliJoules = ((uint32_t)energyReadBuf[0] << 24 | (uint32_t)energyReadBuf[1] << 16 |
+                            (uint32_t)energyReadBuf[2] << 8 | energyReadBuf[3]) * 335.78;
     return true;
 }
 
