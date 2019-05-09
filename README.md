@@ -1,7 +1,4 @@
-# PowerDistributionBoardSoftware
-
-
-# FlightController
+# PowerDeliveryBoardSoftware
 ## Building and deploy
 ### Compile
 To compile the firmware run:
