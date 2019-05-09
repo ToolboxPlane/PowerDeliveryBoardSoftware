@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <avr/interrupt.h>
 #include <avr/wdt.h>
+#include <avr/delay.h>
 #include "Drivers/ltc2946.h"
 #include "Util/communication.h"
 #include "Util/output.h"
@@ -21,7 +22,7 @@ int main() {
     // Enable the interrupts
     sei();
 
-    wdt_enable(WDTO_1S);
+    wdt_enable(WDTO_30MS);
     ltc2946_init(LTC_VCC_ADDR,  0, 0xFFFFFFFF, 14000, 20000, 0, 1000);
     ltc2946_init(LTC_5V_ADDR,  0, 0xFFFFFFFF, 4500, 5500, 0, 500);
 
@@ -52,6 +53,7 @@ int main() {
 
         communication_send_data(status_5V | status_vcc,
                 &meas_vcc, &meas_5V);
+        _delay_ms(10);
 
     }
 #pragma clang diagnostic pop
