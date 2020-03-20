@@ -12,7 +12,7 @@
 #define TRANSMITTER_ID 74
 
 void communication_init(void) {
-    uart_init(0, 115200, 0);
+    uart_init(0, 115200, NONE, 1, 0);
 }
 
 void communication_send_data(uint8_t status, const ltc_result_t *meas_vcc, const ltc_result_t *meas_5v) {
