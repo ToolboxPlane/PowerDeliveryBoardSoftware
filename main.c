@@ -22,7 +22,7 @@ int main() {
     // Enable the interrupts
     sei();
 
-    wdt_enable(WDTO_30MS);
+    wdt_enable(WDTO_1S);
     ltc2946_init(LTC_VCC_ADDR,  0, 0xFFFFFFFF, 14000, 20000, 0, 1000);
     ltc2946_init(LTC_5V_ADDR,  0, 0xFFFFFFFF, 4500, 5500, 0, 500);
 
@@ -53,7 +53,7 @@ int main() {
 
         communication_send_data(status_5V | status_vcc,
                 &meas_vcc, &meas_5V);
-        _delay_ms(10);
+        _delay_ms(500);
 
     }
 #pragma clang diagnostic pop

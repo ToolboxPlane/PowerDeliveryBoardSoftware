@@ -6,10 +6,6 @@ To compile the firmware run:
 cmake . && make
 ```
 To compile the tests run the same commands in the test directory
-#### WTF? Two independent cmake-projects?
-You may ask why is there a second, independet cmake project for the tests (and you have the best right to do so).
-Well i do not like the solution either but it seems like cmake is not able to have two targets with different compilers.
-So if you find a better solution for doing this (no i won't use Makefiles or Bazel or Scons or Gradle or whatever...) please write an issue and i will fix this immediatly.
 
 ### How to flash to firmware
 This assumes that an AVRISP mk2 is used, if you use a different programmer
