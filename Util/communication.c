@@ -12,14 +12,13 @@
 #define TRANSMITTER_ID 74
 
 void communication_init(void) {
+    rc_lib_transmitter_id = TRANSMITTER_ID;
     uart_init(0, 115200, NONE, 1, 0);
 }
 
 void communication_send_data(uint8_t status, const ltc_result_t *meas_vcc, const ltc_result_t *meas_5v) {
     rc_lib_package_t pkg;
-    pkg.resolution = 256;
-    pkg.channel_count = 8;
-    pkg.mesh = false;
+    rc_lib_init_tx(&pkg, 256, 8);
 
     pkg.channel_data[0] = status;
     pkg.channel_data[1] = meas_vcc->voltageMilliVolts / 128;
@@ -30,7 +29,6 @@ void communication_send_data(uint8_t status, const ltc_result_t *meas_vcc, const
     pkg.channel_data[6] = 0;
     pkg.channel_data[7] = 0;
 
-    rc_lib_transmitter_id = TRANSMITTER_ID;
     uint8_t len = rc_lib_encode(&pkg);
     uart_send_buf(0, pkg.buffer, len);
 }
