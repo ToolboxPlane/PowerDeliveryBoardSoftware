@@ -51,8 +51,7 @@ int main() {
         output_led(5, status_vcc == 0 ? on : off);
         output_led(6, status_5V == 0 ? on : off);
 
-        communication_send_data(status_5V | status_vcc,
-                &meas_vcc, &meas_5V);
+        communication_send_data(&meas_vcc, &meas_5V);
         _delay_ms(500);
 
     }

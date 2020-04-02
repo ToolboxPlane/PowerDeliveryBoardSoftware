@@ -47,12 +47,11 @@ If only a single led is off for a longer time, there is a some kind of problem.
 | 7 | Unused |
 
 ## Package format (Transmitter ID 74)
-The package is a 8 bit, 8 Channel Package with the following data:
+The package is a 8 bit, 4 Channel Package with the following data:
 
 | Command | Response |
 | --- | --- |
-| 0 | Status |
-| 1 | Voltage VCC in mV / 128 |
-| 2 | Current VCC in mA / 256 |
-| 3 | Voltage 5V in mV / 32 |
-| 4 | Current 5V in mA / 64 |
+| 0 | Voltage VCC in mV / 128 |
+| 1 | Current VCC in mA / 256 |
+| 2 | Voltage 5V in mV / 32 |
+| 3 | Current 5V in mA / 64 |

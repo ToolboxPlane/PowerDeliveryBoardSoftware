@@ -11,6 +11,6 @@
 #define POWERDELIVERYBOARDSOFTWARE_COMMUNICATION_H
 
 void communication_init(void);
-void communication_send_data(uint8_t status, const ltc_result_t *meas_vcc, const ltc_result_t *meas_5v);
+void communication_send_data(const ltc_result_t *meas_vcc, const ltc_result_t *meas_5v);
 
 #endif //POWERDELIVERYBOARDSOFTWARE_COMMUNICATION_H
